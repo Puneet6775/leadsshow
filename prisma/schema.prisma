@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum SearchJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum DataSource {
+  GOOGLE_PLACES
+  WEBSITE
+  MANUAL
+}
+
+enum ExportFormat {
+  XLSX
+  CSV
+}
+
+model SearchJob {
+  id           String          @id @default(auto()) @map("_id") @db.ObjectId
+  name         String?
+  category     String
+  subcategory  String?
+  keyword      String?
+  city         String
+  state        String?
+  country      String          @default("India")
+  radiusKm     Int?
+  status       SearchJobStatus @default(PENDING)
+  source       DataSource      @default(GOOGLE_PLACES)
+  totalFound   Int             @default(0)
+  totalSaved   Int             @default(0)
+  errorMessage String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  results      SearchResult[]
+}
+
+model Lead {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  externalPlaceId  String?        @unique
+  source           DataSource     @default(GOOGLE_PLACES)
+  businessName     String
+  primaryCategory  String?
+  subcategory      String?
+  ownerName        String?
+  phonePrimary     String?
+  email            String?
+  websiteUrl       String?
+  googleMapsUrl    String?
+  addressLine1     String?
+  city             String?
+  state            String?
+  postalCode       String?
+  country          String?
+  latitude         Float?
+  longitude        Float?
+  rating           Float?
+  reviewCount      Int?
+  businessStatus   String?
+  openingHoursJson Json?
+  hasWebsite       Boolean        @default(false)
+  hasPhone         Boolean        @default(false)
+  leadScore        Int?
+  notes            String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  searchResults    SearchResult[]
+}
+
+model SearchResult {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  searchJobId String    @db.ObjectId
+  leadId      String    @db.ObjectId
+  rank        Int?
+  queryText   String?
+  rawPayload  Json
+  createdAt   DateTime  @default(now())
+
+  searchJob   SearchJob @relation(fields: [searchJobId], references: [id])
+  lead        Lead      @relation(fields: [leadId], references: [id])
+
+  @@unique([searchJobId, leadId])
+}
+
+model ExportFile {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  fileName    String
+  format      ExportFormat
+  rowCount    Int          @default(0)
+  filtersJson Json?
+  createdAt   DateTime     @default(now())
+}
