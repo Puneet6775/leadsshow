@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { textSearchPlaces, getPlaceDetails } from '@/integrations/google-places/client';
 import { mapGooglePlaceToLead } from '@/lib/mappers';
+import { assertEnv } from '@/lib/env';
 
 const schema = z.object({
   category: z.string().min(2),
@@ -16,6 +17,7 @@ const RESULTS_PER_PAGE = 10000; // Increased to show all results without strict 
 
 export async function POST(request: NextRequest) {
   try {
+    assertEnv();
     const body = await request.json();
     const input = schema.parse(body);
 
@@ -135,7 +137,15 @@ export async function POST(request: NextRequest) {
       leads: paginatedLeads,
     });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid search input', details: error.issues },
+        { status: 422 }
+      );
+    }
+
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error('Search API error:', message, error);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
