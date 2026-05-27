@@ -12,7 +12,8 @@ export async function GET(request: NextRequest) {
 
   try {
     let suggestions: string[] = [];
-    const queryLower = query.toLowerCase();
+    const normalize = (s: string) => s.replace(/\s+/g, '').toLowerCase();
+    const queryNorm = normalize(query);
 
     if (type === 'category') {
       // Get unique primary categories from leads with better matching
@@ -34,9 +35,9 @@ export async function GET(request: NextRequest) {
 
       // Sort by relevance: exact prefix match first, then contains
       const scored = filtered.map((cat) => {
-        const catLower = cat.toLowerCase();
-        if (catLower.startsWith(queryLower)) return { cat, score: 100 };
-        if (catLower.includes(queryLower)) return { cat, score: 50 };
+        const catNorm = normalize(cat);
+        if (catNorm.startsWith(queryNorm)) return { cat, score: 100 };
+        if (catNorm.includes(queryNorm)) return { cat, score: 50 };
         return { cat, score: 0 };
       });
 
@@ -66,9 +67,9 @@ export async function GET(request: NextRequest) {
 
       // Sort by relevance: exact prefix match first, then contains
       const scored = filtered.map((city) => {
-        const cityLower = city.toLowerCase();
-        if (cityLower.startsWith(queryLower)) return { city, score: 100 };
-        if (cityLower.includes(queryLower)) return { city, score: 50 };
+        const cityNorm = normalize(city);
+        if (cityNorm.startsWith(queryNorm)) return { city, score: 100 };
+        if (cityNorm.includes(queryNorm)) return { city, score: 50 };
         return { city, score: 0 };
       });
 
@@ -78,6 +79,15 @@ export async function GET(request: NextRequest) {
         .slice(0, 30)
         .map((s) => s.city)
         .filter((v, i, a) => a.indexOf(v) === i); // Remove duplicates
+    } else if (type === 'state') {
+      // Static list of Indian states and union territories for reliable suggestions
+      const indianStates = [
+        'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman and Nicobar Islands','Chandigarh','Dadra and Nagar Haveli and Daman and Diu','Delhi','Jammu and Kashmir','Ladakh','Lakshadweep','Puducherry'
+      ];
+
+      const scored = indianStates.map((s) => ({ state: s, score: normalize(s).startsWith(queryNorm) ? 100 : (normalize(s).includes(queryNorm) ? 50 : 0) }));
+
+      suggestions = scored.filter((s) => s.score > 0).sort((a,b) => b.score - a.score || a.state.localeCompare(b.state)).slice(0,30).map((s) => s.state);
     }
 
     return NextResponse.json(suggestions);

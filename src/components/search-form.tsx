@@ -31,8 +31,9 @@ export default function SearchForm() {
   const [suggestions, setSuggestions] = useState<{
     category: string[];
     city: string[];
-  }>({ category: [], city: [] });
-  const [activeSuggestion, setActiveSuggestion] = useState<'category' | 'city' | null>(null);
+    state: string[];
+  }>({ category: [], city: [], state: [] });
+  const [activeSuggestion, setActiveSuggestion] = useState<'category' | 'city' | 'state' | null>(null);
   const [totalLeads, setTotalLeads] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [currentDate, setCurrentDate] = useState('');
@@ -65,7 +66,7 @@ export default function SearchForm() {
 
   // Fetch suggestions when user types
   useEffect(() => {
-    const fetchSuggestions = async (field: 'category' | 'city', value: string) => {
+    const fetchSuggestions = async (field: 'category' | 'city' | 'state', value: string) => {
       if (!value || value.length < 1) {
         setSuggestions((prev) => ({ ...prev, [field]: [] }));
         return;
@@ -83,10 +84,11 @@ export default function SearchForm() {
     const timer = setTimeout(() => {
       if (form.category) fetchSuggestions('category', form.category);
       if (form.city) fetchSuggestions('city', form.city);
+      if (form.state) fetchSuggestions('state', form.state);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [form.category, form.city]);
+  }, [form.category, form.city, form.state]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -124,13 +126,13 @@ export default function SearchForm() {
     }
   }
 
-  const handleSuggestionSelect = (field: 'category' | 'city', value: string) => {
+  const handleSuggestionSelect = (field: 'category' | 'city' | 'state', value: string) => {
     setForm({ ...form, [field]: value });
     setActiveSuggestion(null);
     setSuggestions((prev) => ({ ...prev, [field]: [] }));
   };
 
-  const handleInputChange = (field: 'category' | 'city', value: string) => {
+  const handleInputChange = (field: 'category' | 'city' | 'state', value: string) => {
     setForm({ ...form, [field]: value });
     setActiveSuggestion(field);
   };
@@ -263,12 +265,30 @@ export default function SearchForm() {
           )}
         </div>
 
-        <input
-          className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3"
-          placeholder="State"
-          value={form.state}
-          onChange={(e) => setForm({ ...form, state: e.target.value })}
-        />
+        <div className="relative">
+          <input
+            className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3"
+            placeholder="State"
+            value={form.state}
+            onChange={(e) => handleInputChange('state', e.target.value)}
+          />
+          {activeSuggestion === 'state' && suggestions.state.length > 0 && (
+            <div
+              ref={(el) => { suggestionsRef.current['state'] = el; }}
+              className="absolute top-full left-0 right-0 z-10 mt-1 rounded-xl border border-slate-600 bg-slate-900 shadow-lg"
+            >
+              {suggestions.state.map((sugg, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => handleSuggestionSelect('state', sugg)}
+                  className="cursor-pointer border-b border-slate-700 px-4 py-2 hover:bg-slate-800"
+                >
+                  {sugg}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <button
           className="rounded-xl bg-cyan-500 px-4 py-3 font-semibold text-slate-950 hover:bg-cyan-400"

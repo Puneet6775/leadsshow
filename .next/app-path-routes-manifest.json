@@ -1,0 +1,10 @@
+{
+  "/api/exports/search/route": "/api/exports/search",
+  "/api/leads/route": "/api/leads",
+  "/api/search/route": "/api/search",
+  "/api/exports/xlsx/route": "/api/exports/xlsx",
+  "/api/suggestions/route": "/api/suggestions",
+  "/_not-found/page": "/_not-found",
+  "/dashboard/page": "/dashboard",
+  "/page": "/"
+}

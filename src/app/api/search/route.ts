@@ -52,32 +52,50 @@ export async function POST(request: NextRequest) {
 
       if (!mapped.externalPlaceId) continue;
 
-      const lead = await db.lead.upsert({
+      // Replace upsert with find -> update/create to avoid implicit transactions
+      let lead = await db.lead.findUnique({
         where: { externalPlaceId: mapped.externalPlaceId },
-        update: mapped,
-        create: mapped,
       });
 
-      await db.searchResult.upsert({
+      if (lead) {
+        lead = await db.lead.update({
+          where: { id: lead.id },
+          data: mapped,
+        });
+      } else {
+        lead = await db.lead.create({
+          data: mapped,
+        });
+      }
+
+      // SearchResult upsert replacement: try to find then update or create
+      const existingResult = await db.searchResult.findFirst({
         where: {
-          searchJobId_leadId: {
-            searchJobId: searchJob.id,
-            leadId: lead.id,
-          },
-        },
-        update: {
-          rank: i + 1,
-          queryText: textQuery,
-          rawPayload: details,
-        },
-        create: {
           searchJobId: searchJob.id,
           leadId: lead.id,
-          rank: i + 1,
-          queryText: textQuery,
-          rawPayload: details,
         },
       });
+
+      if (existingResult) {
+        await db.searchResult.update({
+          where: { id: existingResult.id },
+          data: {
+            rank: i + 1,
+            queryText: textQuery,
+            rawPayload: details,
+          },
+        });
+      } else {
+        await db.searchResult.create({
+          data: {
+            searchJobId: searchJob.id,
+            leadId: lead.id,
+            rank: i + 1,
+            queryText: textQuery,
+            rawPayload: details,
+          },
+        });
+      }
 
       saved += 1;
     }

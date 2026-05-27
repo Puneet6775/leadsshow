@@ -1,4 +1,10 @@
 {
-  "/page": "app/page.js",
-  "/dashboard/page": "app/dashboard/page.js"
+  "/api/exports/search/route": "app/api/exports/search/route.js",
+  "/api/leads/route": "app/api/leads/route.js",
+  "/api/search/route": "app/api/search/route.js",
+  "/api/exports/xlsx/route": "app/api/exports/xlsx/route.js",
+  "/api/suggestions/route": "app/api/suggestions/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/page": "app/page.js"
 }
