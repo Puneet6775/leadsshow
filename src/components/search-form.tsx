@@ -90,8 +90,15 @@ export default function SearchForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+
+    // Basic client-side validation to avoid sending requests that will 400
+    if (form.category.trim().length < 2 || form.city.trim().length < 2) {
+      setError('Please enter at least 2 characters for both category and city');
+      return;
+    }
+
+    setLoading(true);
     setCurrentPage(1);
 
     try {
@@ -129,8 +136,14 @@ export default function SearchForm() {
   };
 
   const handlePageChange = async (newPage: number) => {
-    setLoading(true);
     setError(null);
+
+    if (form.category.trim().length < 2 || form.city.trim().length < 2) {
+      setError('Please enter at least 2 characters for both category and city');
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const res = await fetch('/api/search', {
