@@ -16,25 +16,39 @@ export async function GET(request: NextRequest) {
     const queryNorm = normalize(query);
 
     if (type === 'category') {
-      // Get unique primary categories from leads with better matching
-      const leads = await db.lead.findMany({
-        where: {
-          primaryCategory: {
-            not: null,
-          },
-        },
-        select: { primaryCategory: true },
-        distinct: ['primaryCategory'],
-        take: 1000, // Get more to filter
-      });
+      // Fallback categories for when database is empty
+      const fallbackCategories = [
+        'Restaurant', 'Cafe', 'Bar', 'Hotel', 'Hospital', 'Doctor', 'Dentist',
+        'Gym', 'Salon', 'Spa', 'Beauty', 'Hair Cutting', 'Skin Clinic',
+        'Pharmacy', 'Shop', 'Grocery', 'Bakery', 'Clothing', 'Electronics',
+        'Bank', 'ATM', 'School', 'College', 'Library', 'Park', 'Temple'
+      ];
 
-      // Filter and score results like Google does
-      const filtered = leads
-        .map((l) => l.primaryCategory)
-        .filter(Boolean) as string[];
+      let categories: string[] = [];
 
-      // Sort by relevance: exact prefix match first, then contains
-      const scored = filtered.map((cat) => {
+      // Try to get from database first
+      try {
+        const leads = await db.lead.findMany({
+          where: { primaryCategory: { not: null } },
+          select: { primaryCategory: true },
+          distinct: ['primaryCategory'],
+          take: 1000,
+        });
+        categories = leads.map((l) => l.primaryCategory).filter(Boolean) as string[];
+      } catch (err) {
+        console.error('Error fetching categories from DB:', err);
+      }
+
+      // Use fallback if no results
+      if (categories.length === 0) {
+        categories = fallbackCategories;
+      } else {
+        // Merge with fallback to ensure common items are available
+        categories = [...new Set([...categories, ...fallbackCategories])];
+      }
+
+      // Score and sort by relevance
+      const scored = categories.map((cat) => {
         const catNorm = normalize(cat);
         if (catNorm.startsWith(queryNorm)) return { cat, score: 100 };
         if (catNorm.includes(queryNorm)) return { cat, score: 50 };
@@ -49,24 +63,40 @@ export async function GET(request: NextRequest) {
         .filter((v, i, a) => a.indexOf(v) === i); // Remove duplicates
 
     } else if (type === 'city') {
-      // Get unique cities from leads with better matching
-      const leads = await db.lead.findMany({
-        where: {
-          city: {
-            not: null,
-          },
-        },
-        select: { city: true },
-        distinct: ['city'],
-        take: 1000, // Get more to filter
-      });
+      // Fallback cities for when database is empty
+      const fallbackCities = [
+        'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata',
+        'Pune', 'Ahmedabad', 'Jaipur', 'Lucknow', 'Chandigarh', 'Indore',
+        'Gurgaon', 'Noida', 'Visakhapatnam', 'Surat', 'Nagpur', 'Bhopal',
+        'Shimla', 'Manali', 'Agra', 'Varanasi', 'Kochi', 'Thiruvananthapuram',
+        'Coimbatore', 'Visakhapatnam', 'Vadodara', 'Ranchi', 'Patna'
+      ];
 
-      const filtered = leads
-        .map((l) => l.city)
-        .filter(Boolean) as string[];
+      let cities: string[] = [];
 
-      // Sort by relevance: exact prefix match first, then contains
-      const scored = filtered.map((city) => {
+      // Try to get from database first
+      try {
+        const leads = await db.lead.findMany({
+          where: { city: { not: null } },
+          select: { city: true },
+          distinct: ['city'],
+          take: 1000,
+        });
+        cities = leads.map((l) => l.city).filter(Boolean) as string[];
+      } catch (err) {
+        console.error('Error fetching cities from DB:', err);
+      }
+
+      // Use fallback if no results
+      if (cities.length === 0) {
+        cities = fallbackCities;
+      } else {
+        // Merge with fallback to ensure common items are available
+        cities = [...new Set([...cities, ...fallbackCities])];
+      }
+
+      // Score and sort by relevance
+      const scored = cities.map((city) => {
         const cityNorm = normalize(city);
         if (cityNorm.startsWith(queryNorm)) return { city, score: 100 };
         if (cityNorm.includes(queryNorm)) return { city, score: 50 };
